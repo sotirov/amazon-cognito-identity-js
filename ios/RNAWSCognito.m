@@ -9,12 +9,21 @@ static NSString* N_IN_HEX = @"FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129
 }
 RCT_EXPORT_MODULE()
 
+RCT_EXPORT_SYNCHRONOUS_TYPED_METHOD(NSString*, getRandomBase64:(NSUInteger)byteLength) {
+    NSMutableData *data = [NSMutableData dataWithLength:byteLength];
+    int result = SecRandomCopyBytes(kSecRandomDefault, byteLength, data.mutableBytes);
+    if (result != errSecSuccess) {
+        @throw([NSException exceptionWithName:@"NO_RANDOM_BYTES" reason:@"Failed to acquire secure random bytes" userInfo:nil]);
+    }
+    return [data base64EncodedStringWithOptions:0];
+}
+
 RCT_EXPORT_METHOD(computeModPow:(NSDictionary *)values
                   callback:(RCTResponseSenderBlock)callback) {
-    JKBigInteger *target = [[JKBigInteger alloc] initWithString:values[@"target"] andRadix:16];
-    JKBigInteger *value = [[JKBigInteger alloc] initWithString:values[@"value"] andRadix:16];
-    JKBigInteger *modifier = [[JKBigInteger alloc] initWithString:values[@"modifier"] andRadix:16];
-    JKBigInteger *result = [target pow:value andMod:modifier];
+    JKBigIntegerOc *target = [[JKBigIntegerOc alloc] initWithString:values[@"target"] andRadix:16];
+    JKBigIntegerOc *value = [[JKBigIntegerOc alloc] initWithString:values[@"value"] andRadix:16];
+    JKBigIntegerOc *modifier = [[JKBigIntegerOc alloc] initWithString:values[@"modifier"] andRadix:16];
+    JKBigIntegerOc *result = [target pow:value andMod:modifier];
     if (result) {
         callback(@[[NSNull null], [result stringValueWithRadix:16]]);
     } else {
@@ -24,17 +33,17 @@ RCT_EXPORT_METHOD(computeModPow:(NSDictionary *)values
 
 RCT_EXPORT_METHOD(computeS:(NSDictionary *)values
                   callback:(RCTResponseSenderBlock)callback) {
-    JKBigInteger *N = [[JKBigInteger alloc] initWithString:N_IN_HEX andRadix:16];
-    JKBigInteger *g = [[JKBigInteger alloc] initWithString:values[@"g"] andRadix:16];
-    JKBigInteger *x = [[JKBigInteger alloc] initWithString:values[@"x"] andRadix:16];
-    JKBigInteger *k = [[JKBigInteger alloc] initWithString:values[@"k"] andRadix:16];
-    JKBigInteger *a = [[JKBigInteger alloc] initWithString:values[@"a"] andRadix:16];
-    JKBigInteger *b = [[JKBigInteger alloc] initWithString:values[@"b"] andRadix:16];
-    JKBigInteger *u = [[JKBigInteger alloc] initWithString:values[@"u"] andRadix:16];
-    JKBigInteger *exp = [a add:[u multiply:x]];
-    JKBigInteger *base = [b subtract:[k multiply:[g pow:x andMod:N]]];
+    JKBigIntegerOc *N = [[JKBigIntegerOc alloc] initWithString:N_IN_HEX andRadix:16];
+    JKBigIntegerOc *g = [[JKBigIntegerOc alloc] initWithString:values[@"g"] andRadix:16];
+    JKBigIntegerOc *x = [[JKBigIntegerOc alloc] initWithString:values[@"x"] andRadix:16];
+    JKBigIntegerOc *k = [[JKBigIntegerOc alloc] initWithString:values[@"k"] andRadix:16];
+    JKBigIntegerOc *a = [[JKBigIntegerOc alloc] initWithString:values[@"a"] andRadix:16];
+    JKBigIntegerOc *b = [[JKBigIntegerOc alloc] initWithString:values[@"b"] andRadix:16];
+    JKBigIntegerOc *u = [[JKBigIntegerOc alloc] initWithString:values[@"u"] andRadix:16];
+    JKBigIntegerOc *exp = [a add:[u multiply:x]];
+    JKBigIntegerOc *base = [b subtract:[k multiply:[g pow:x andMod:N]]];
     base = [self mod:base divisor:N];
-    JKBigInteger *result = [base pow:exp andMod:N];
+    JKBigIntegerOc *result = [base pow:exp andMod:N];
     result = [self mod:result divisor:N];
     if (result) {
         callback(@[[NSNull null], [result stringValueWithRadix:16]]);
@@ -43,7 +52,7 @@ RCT_EXPORT_METHOD(computeS:(NSDictionary *)values
     }
 }
 
-- (JKBigInteger*) mod:(JKBigInteger*)dividend divisor:(JKBigInteger*) divisor {
+- (JKBigIntegerOc*) mod:(JKBigIntegerOc*)dividend divisor:(JKBigIntegerOc*) divisor {
     return [[divisor add:[dividend remainder:divisor]] remainder:divisor];
 }
 
